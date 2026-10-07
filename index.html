@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Pics to words. Игра для изучения иностранных языков</title>
+  <script src="vendor/react.development.js"></script>
+  <script src="vendor/react-dom.development.js"></script>
+  <script src="vendor/babel.min.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="data.js"></script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+
+    root.render(<App words={words} />);
+    // words=[{id, token, word/url, type},{}]
+
+
+    function App({ words = [] }) {
+
+
+      const [finishedItems, setFinishedItems] = React.useState(['1', '2']); // массив 
+      // id отгаданных карточек(отгаданные пары карточки будут дизейблиться)
+      const [stepsCount, setStepsCount] = React.useState(0); // колво шагов
+
+
+
+      const checkItems = (firstItem, secondItem) => { // передаем id 2-ух выбранных карточек
+
+
+        const firstWord = words.find(({ id }) => id === firstItem);  // смотрим есть ли 
+        // в массиве words firstItem(id отгаданной карточки), вернет элемент
+        const secondWord = words.find(({ id }) => id === secondItem);
+
+        if (firstWord.token === secondWord.token) {
+          setFinishedItems((items) => [...items, firstItem, secondItem]); // передаем 
+          // функцию - обновление в setFinishedItems, пополняем массив - состояние 
+          // finishedItems двумя карточками. items - текущее состояние массива finishedItems
+        }
+
+        setStepsCount((i) => i + 1); // передаем функцию-обновление, 
+        //состояние stepsCount измениться и реакт перерендеривает этот компонент
+      };
+
+
+
+
+      const errorsCount = stepsCount - finishedItems.length / 2; // колво жизней(максимум 3 шт)
+
+      const lives = 3 - errorsCount;
+      const isWin = finishedItems.length === words.length;
+      const isGameOver = isWin || lives === 0;
+      // все слова отгаданы или  колво ошибок >3(3 жизни законичлись, то игра 
+      //заканчивается.Даже если  не все карточки выбрали)
+
+      const modalClassName = isWin ? '' : 'modal-box-lose';
+      const modalCaption = isWin ? 'Победа' : 'Поражение';
+      const modalDescription = `Вы нашли ${finishedItems.length / 2} слова`;
+
+
+
+      const handleReset = () => {
+        setFinishedItems([]);
+        setStepsCount(0);
+      };
+
+
+      return (
+        <section className="game">
+          <img src="img/pics-to-words.svg" width="112" height="16"
+            alt="Pics to words" />
+          <Progress value={finishedItems.length} max={words.length} />
+          <Hearts count={3} value={errorsCount} />
+          <Grid words={words} finishedItems={finishedItems} checkItems={checkItems} />
+          {isGameOver && (
+            <Modal className={modalClassName}>
+              <h3 className="modal-caption">{modalCaption}</h3>
+              <p className="modal-description">{modalDescription}</p>
+              <button onClick={handleReset} className="button" type="button">Новая игра</button>
+            </Modal >
+          )}
+        </section>
+      );
+    }
+
+
+    function Hearts({ count = 0, value = 0 }) {
+      // count-общее кол-во попыток(3 штуки), value- колво ошибок
+
+      return (
+        <p className="hit-points-indicator">
+          {Array(count).fill(null).map((_, i) => (  // map вернет массив
+            // [<span></span>] - сердечки
+            <span className={i < value ? 'hit-points-used' : 'hit-points-unused'} />
+            // если сделали ошибочный ход, то сердечик дизейблятся(hit-points-used)
+          ))
+          }
+        </p>
+      );
+    }
+
+
+
+    function Progress({ value, max }) {
+
+      return (
+        <div className="progress-wrapper"> // для вычисления значения width в style  используем value, max:
+          <div className="progress" style={{ width: `${(max - value) / max * 100}%` }}></div>
+  // Первые внешние фигурные скобки означают, что внутри содержится JS-выражение. А вторые внутренние — объявление JS-объекта.
+        </div>
+      );
+    }
+
+
+    function Grid({ words, finishedItems, checkItems }) { // пропсы words, 
+      finishedItems, checkItems(коллбэк - фукния)
+
+
+      const [selectedItems, setSelectedItems] = React.useState([]); // массив 
+      // выделенных(выбранных) картчоек, хрнаит id карточек
+
+
+
+
+
+      const handleCardClick = (id) => { // id выбранной картчоки
+
+        if (selectedItems.includes(id)) {
+          return; // выход из этой фукнции
+        }
+
+        switch (selectedItems.length) {
+          case 0: // если список пустой
+            setSelectedItems([id]); // добавляем выбранную в selectedItems
+            break;
+          case 1:	// если одна картчока в спсике
+            setSelectedItems((items) => [...items, id]); //делаем копию(...items) 
+            // спиcка selectedItems и  добавлям туда карточку выбранную
+            checkItems(selectedItems[0], id); // коллбэк-фукния
+            break;
+          case 2: // если 2 картчоки в спсике
+            setSelectedItems([id]); // добавляем выбранную в selectedItems
+            break;
+
+          default:
+            setSelectedItems([]); // иначе очищаем selectedItems
+        }
+      };
+
+
+
+      const cards = words.map((item) => ( // вернет [<Card />,[<Card />, ]
+        <Card
+          key={item.id}
+          item={item}
+          isSelected={selectedItems.includes(item.id)}
+          isFinished={finishedItems.includes(item.id)}
+          onCardClick={handleCardClick} // передаем коллбэк handleCardClick
+        />
+      ));
+
+
+      return (
+        <ul className="cards">
+          {cards}
+        </ul>
+      );
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    const { url, description, id } = item; // деструктурировали объект
+
+    const className = `${isVisible ? 'card-show' : ''} ${isFinished ? 'card-finished' : ''}`;
+
+    const handleClick = () => {
+      onCardClick(id); // id выбранной карточки
+    };
+
+
+    return (
+      <li onClick={handleClick} className={`card ${className}`}>
+        <img width="204" height="144" src={url} alt={description} />
+      </li>
+    );
+    }
+  </script>
+</body>
+
+</html>
