@@ -173,8 +173,41 @@
     }
 
 
+    function Modal({ children, className }) {
+
+      return ( // children это все что находится в  <Modal className="modal-box"> 
+        <div className="modal">
+          <div className={`modal-box ${className}`}>
+            {children}
+          </div>
+        </div>
+      );
+    }
 
 
+    function Card({ item, isSelected, isFinished, onCardClick, id }) {
+      // пропсы ur, text и тд
+
+      const { url, word: text, type } = item; // детсруткроваи объект item, свойтсов word переименоваи в text
+
+      const content = type === 'image' ? <img src={url} width="185" height="100" alt="" /> : <span>{text}</span>;
+
+      const className = `card ${isSelected ? 'selected' : ''} ${isFinished ? 'disabled' : ''}`;
+
+
+
+
+      const handleClick = () => {
+
+        if (isFinished) { // если карточка отгаданная
+          return; // выход из этой функции
+        }
+
+        onCardClick(id); // колбэк-фукнцию handleCardClick вызываем, 
+        // тем самым состояние selectedItems(ролительского компонента) обновляем(поднятие состояния)
+      };
+
+    };
 
 
 
@@ -196,7 +229,7 @@
     return (
       <li onClick={handleClick} className={`card ${className}`}>
         <img width="204" height="144" src={url} alt={description} />
-      </li>
+      </li >
     );
     }
   </script>
